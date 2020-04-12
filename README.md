@@ -1,5 +1,5 @@
 # Cal Poly's STAT 431: Advanced Statistical Computing with R
-This repository contains my output as I follow [Dr. Kelly Bodwin](https://twitter.com/KellyBodwin) and [Dr. Hunter Glanz](https://twitter.com/hglanz)'s public-facing version of a STAT 431 at Cal Poly.
+This repository contains my output as I follow [Dr. Kelly Bodwin](https://twitter.com/KellyBodwin) and [Dr. Hunter Glanz](https://twitter.com/hglanz)'s public-facing version of STAT 431 at Cal Poly.
 
 From the course's [website](https://cal-poly-advanced-r.github.io/STAT-431/): 
 > **Course Description**  

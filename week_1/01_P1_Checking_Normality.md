@@ -1,18 +1,15 @@
----
-title: "Lab, Part One: Checking Normality"
-# author: "Isabella Benabaye"
-# date: "4/12/2020"
-output: github_document
----
+Lab, Part One: Checking Normality
+================
+
 ## Import libraries
 
-```{r echo=T, message=FALSE, warning=FALSE}
+``` r
 library(tidyverse)
 ```
 
 ## Defining the function
 
-```{r}
+``` r
 qqplot0 <- function(x) {
   # order the input vector
   x <- sort(x)
@@ -37,18 +34,22 @@ qqplot0 <- function(x) {
 
 ## Testing the function
 
-Test with a normally distributed `x` vector:   
+Test with a normally distributed `x` vector:
 
-```{r}
+``` r
 test <-  rnorm(50, mean = 20, sd = 10) 
 
 qqplot0(test)
 ```
 
-Test with a random `x` vector:   
+![](01_P1_Checking_Normality_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
-```{r}
+Test with a random `x` vector:
+
+``` r
 test <-  runif(100)
 
 qqplot0(test)
 ```
+
+![](01_P1_Checking_Normality_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->

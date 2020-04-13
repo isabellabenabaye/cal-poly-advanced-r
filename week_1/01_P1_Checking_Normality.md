@@ -42,7 +42,7 @@ test <-  rnorm(50, mean = 20, sd = 10)
 qqplot0(test)
 ```
 
-![](01_P1_Checking_Normality_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](01_P1_Checking_Normality_files/figure-gfm/Test%201-1.png)<!-- -->
 
 Test with a random `x` vector:
 
@@ -52,4 +52,4 @@ test <-  runif(100)
 qqplot0(test)
 ```
 
-![](01_P1_Checking_Normality_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](01_P1_Checking_Normality_files/figure-gfm/Test%202-1.png)<!-- -->

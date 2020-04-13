@@ -39,7 +39,7 @@ qqplot0 <- function(x) {
 
 Test with a normally distributed `x` vector:   
 
-```{r}
+```{r Test 1}
 test <-  rnorm(50, mean = 20, sd = 10) 
 
 qqplot0(test)
@@ -47,7 +47,7 @@ qqplot0(test)
 
 Test with a random `x` vector:   
 
-```{r}
+```{r Test 2}
 test <-  runif(100)
 
 qqplot0(test)

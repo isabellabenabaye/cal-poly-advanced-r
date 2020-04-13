@@ -1,0 +1,82 @@
+---
+title: "Lab, Part 2: `Oscars` Data Analysis"
+# author: Isabella Benabaye
+# date: 4/12/2020
+output: github_document
+---
+
+## Import libraries and data
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(lubridate)
+
+oscars <- read_csv('https://raw.githubusercontent.com/Cal-Poly-Advanced-R/Lab_1/master/Oscars-demographics-DFE.csv')
+```
+
+## Tidy data
+Upon checking the data, we can see there aresome inconsistencies.  
+
+For `date_of_birth`:   
+
+* One person has ` [1]` at the end of their birthday   
+* Some of the dates have years that are 2 digits, some 4. If we simply use `dmy()`, the years before 1969 will be put in the 21st century instead of the 20th.   
+* There is one person who only has a birth year listed.    
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+oscars$date_of_birth <- str_replace_all(oscars$date_of_birth," [1]","")
+oscars <- oscars %>% 
+  # fix the date of birth
+  mutate(date_of_birth = if_else(str_length(date_of_birth) > 11, str_sub(date_of_birth,1,11), date_of_birth)) %>%  ## remove "[1]" from one of the obs
+  separate(date_of_birth, c("day","month","birthyear"), sep = "-", remove = FALSE) %>%   ## separate birthday components
+  mutate(birthyear = case_when(str_length(birthyear) == 2 ~ paste0("19",birthyear),  ## add the century to the birth year
+                               str_length(day) == 4 ~ day,  ## address the obs with only the year
+                               TRUE ~ birthyear),
+         dob = ymd(paste(birthyear,month,day,sep = " ")))  ## get the formatted birthday
+```
+
+## Warm-ups
+
+1. Which movie(s) won the most unique "Big 5" awards?
+
+```{r paged.print=FALSE}
+most_awards <- oscars %>% 
+  group_by(movie) %>% 
+  count(name = "awards") %>% 
+  ungroup() %>% 
+  filter(awards == max(awards))
+```
+```{r echo=FALSE}
+knitr::kable(most_awards)
+```
+
+2. Of all actresses who have won the Best Actress award, what are is the most common first name?
+
+```{r paged.print=TRUE}
+common_name <- oscars %>% 
+  filter(award == "Best Actress") %>% 
+  mutate(first_name = word(person,1)) %>% 
+  group_by(first_name) %>% 
+  count() %>% 
+  ungroup() %>% 
+  filter(n == max(n))
+```
+```{r echo=FALSE}
+knitr::kable(common_name)
+```
+
+
+
+3. What US State, or non-US country, has produced the most Oscar winners (for the awards in this dataset)?
+
+```{r}
+common_birthplace <- oscars %>% 
+  group_by(birthplace) %>%
+  count() %>% 
+  ungroup() %>% 
+  filter(n == max(n))
+```
+```{r echo=FALSE}
+knitr::kable(common_birthplace)
+```
+

@@ -2,7 +2,10 @@
 title: "Lab, Part 2: `Oscars` Data Analysis"
 # author: Isabella Benabaye
 # date: 4/12/2020
-output: html_document
+output: 
+  html_document:
+    theme: readable
+    highlight: haddock
 ---
 
 ## Import libraries and data
@@ -46,21 +49,30 @@ age_years <- function(earlier, later)
 ```
 
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-oscars$date_of_birth <- str_replace_all(oscars$date_of_birth," [1]","")
+oscars$date_of_birth <- str_replace_all(oscars$date_of_birth," [1]","")   ## remove "[1]" from one of the obs
+
 oscars <- oscars %>% 
   # fix the date of birth
-  mutate(date_of_birth = if_else(str_length(date_of_birth) > 11, str_sub(date_of_birth,1,11), date_of_birth)) %>%  ## remove "[1]" from one of the obs
+  
+  mutate(date_of_birth = if_else(str_length(date_of_birth) > 11, str_sub(date_of_birth,1,11), date_of_birth)) %>% 
+  
   separate(date_of_birth, c("day","month","birthyear"), sep = "-", remove = FALSE) %>%   ## separate birthday components
+  
   mutate(birthyear = case_when(str_length(birthyear) == 2 ~ paste0("19",birthyear),  ## add the century to the birth year
                                str_length(day) == 4 ~ day,  ## address the obs with only the year
                                TRUE ~ birthyear),
+         
          dob = ymd(paste(birthyear,month,day,sep = " ")),  ## get the formatted birthday
-         award_dt = ymd(paste(year_of_award,"Feb","1", sep = " ")),
+         
+         award_dt = ymd(paste(year_of_award,"Feb","1", sep = " ")),  ## format the exact award date
+         
          ## calculate the person's age using the function age_years() from https://raw.githubusercontent.com/nzcoops/r-code/master/age_function.R
          age = age_years(as.Date(dob), as.Date(award_dt)),
-         gender = case_when(award %in% c("Best Actor", "Best Supporting Actor") ~ 1,
+         
+         gender = case_when(award %in% c("Best Actor", "Best Supporting Actor") ~ 1,  ## gender indicator: M = 1, F = 0
                             award %in% c("Best Actress", "Best Supporting Actress") ~ 0,
                             TRUE ~ NA_real_),
+         
          white = if_else(race_ethnicity == "White", 1, 0)) ## race = white indicator
 
 ```
@@ -105,7 +117,7 @@ knitr::kable(common_name)
 ```{r}
 common_birthplace <- oscars %>% 
   select(person, birthplace) %>% 
-  distinct() %>% 
+  distinct() %>%  ## make sure each person is only counted once
   group_by(birthplace) %>%
   count() %>% 
   ungroup() %>% 
@@ -115,7 +127,7 @@ common_birthplace <- oscars %>%
 knitr::kable(common_birthplace)
 ```
 
-The most common birthplace is *New York*, since New York City has produced the most Oscar winners.  
+The most common birthplace is **New York**, since New York City has produced the most Oscar winners.  
 
 ## Age and Gender
 
@@ -125,16 +137,16 @@ The most common birthplace is *New York*, since New York City has produced the m
 ```{r}
 oscars_gender <- oscars %>% 
   filter(award != "Best Director") %>% 
-  select(person,movie,award,year_of_award,gender, age, white) %>% 
-  distinct()
+  select(person,movie,award,year_of_award,gender,age,white) %>% 
+  distinct()  ## make sure not to get duplicates
 
-lm(formula = age ~ year_of_award + gender + white, data = oscars_gender)
+lm(formula = age ~ year_of_award + gender, data = oscars_gender)
 ```
 
 If we look at a scatter plot of the `year_of_award` vs `age` and highlight them based on gender, we can see that it seems to be in line with the result of the linear model above. Females tend to be younger, and the age of the winners has been ever-so-slightly rising over the years.
 
 
-```{r echo=FALSE}
+```{r scatter plot, echo=FALSE}
 oscars_gender %>% 
   mutate(gender = if_else(gender == 1,"Male","Female")) %>% 
   ggplot(aes(x = year_of_award, y = age, color = gender)) +
@@ -142,10 +154,11 @@ oscars_gender %>%
   labs(x = "Year of Award", y = "Age", color = "Gender") +
   theme_minimal() +
   theme(text = element_text(family = "Source Sans Pro Light", size = 14))
-
 ```
 
-```{r}
+```{r EDA model, eval=FALSE, include=FALSE}
+lm(formula = age ~ year_of_award + gender + white, data = oscars_gender)
+
 oscars_gender %>% 
   mutate(white = if_else(white == 1,"White","Non-white")) %>% 
   ggplot(aes(x = year_of_award, y = age, color = white)) +

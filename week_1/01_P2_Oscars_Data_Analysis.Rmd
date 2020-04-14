@@ -2,7 +2,7 @@
 title: "Lab, Part 2: `Oscars` Data Analysis"
 # author: Isabella Benabaye
 # date: 4/12/2020
-output: github_document
+output: html_document
 ---
 
 ## Import libraries and data
@@ -10,6 +10,10 @@ output: github_document
 ```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(lubridate)
+library(extrafont)
+
+# load fonts - every session
+loadfonts(device = "win", quiet = TRUE)
 
 oscars <- read_csv('https://raw.githubusercontent.com/Cal-Poly-Advanced-R/Lab_1/master/Oscars-demographics-DFE.csv')
 ```
@@ -54,9 +58,10 @@ oscars <- oscars %>%
          award_dt = ymd(paste(year_of_award,"Feb","1", sep = " ")),
          ## calculate the person's age using the function age_years() from https://raw.githubusercontent.com/nzcoops/r-code/master/age_function.R
          age = age_years(as.Date(dob), as.Date(award_dt)),
-         gender = case_when(award %in% c("Best Actor", "Best Supporting Actor") ~ "M",
-                            award %in% c("Best Actress", "Best Supporting Actress") ~ "F",
-                            TRUE ~ NA_character_)) 
+         gender = case_when(award %in% c("Best Actor", "Best Supporting Actor") ~ 1,
+                            award %in% c("Best Actress", "Best Supporting Actress") ~ 0,
+                            TRUE ~ NA_real_),
+         white = if_else(race_ethnicity == "White", 1, 0)) ## race = white indicator
 
 ```
 
@@ -110,7 +115,40 @@ common_birthplace <- oscars %>%
 knitr::kable(common_birthplace)
 ```
 
-The most common birthplace is New York, since New York City has produced the most Oscar winners.
+The most common birthplace is *New York*, since New York City has produced the most Oscar winners.  
 
 ## Age and Gender
+
+**Prompt**: Create a linear model that explores how the typical age of acting award winners has changed over time, and how that effect is different for the two genders of awards.
+
+
+```{r}
+oscars_gender <- oscars %>% 
+  filter(award != "Best Director") %>% 
+  select(person,movie,award,year_of_award,gender, age, white) %>% 
+  distinct()
+
+lm(formula = age ~ year_of_award + gender + white, data = oscars_gender)
+```
+
+If we look at a scatter plot of the `year_of_award` vs `age` and highlight them based on gender, we can see that it seems to be in line with the result of the linear model above. Females tend to be younger, and the age of the winners has been ever-so-slightly rising over the years.
+
+
+```{r echo=FALSE}
+oscars_gender %>% 
+  mutate(gender = if_else(gender == 1,"Male","Female")) %>% 
+  ggplot(aes(x = year_of_award, y = age, color = gender)) +
+  geom_point() + 
+  labs(x = "Year of Award", y = "Age", color = "Gender") +
+  theme_minimal() +
+  theme(text = element_text(family = "Source Sans Pro Light", size = 14))
+
+```
+
+```{r}
+oscars_gender %>% 
+  mutate(white = if_else(white == 1,"White","Non-white")) %>% 
+  ggplot(aes(x = year_of_award, y = age, color = white)) +
+  geom_point()
+```
 

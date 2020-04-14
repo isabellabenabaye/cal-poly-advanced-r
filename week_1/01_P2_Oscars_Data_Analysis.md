@@ -44,15 +44,30 @@ oscars <- oscars %>%
 
 ``` r
 most_awards <- oscars %>% 
+  select(movie,award) %>% 
+  distinct() %>%   ## make sure there are no duplicates
   group_by(movie) %>% 
-  count(name = "awards") %>% 
+  count(name = "awards") %>%  ## count the number of awards per movie
   ungroup() %>% 
-  filter(awards == max(awards))
+  filter(awards == max(awards))  ## only get the top movies with the most unique awards
 ```
 
-| movie               | awards |
-| :------------------ | -----: |
-| Million Dollar Baby |      5 |
+| movie                       | awards |
+| :-------------------------- | -----: |
+| A Streetcar Named Desire    |      3 |
+| Cabaret                     |      3 |
+| From Here to Eternity       |      3 |
+| Going My Way                |      3 |
+| Gone with the Wind          |      3 |
+| It Happened One Night       |      3 |
+| Kramer vs. Kramer           |      3 |
+| Million Dollar Baby         |      3 |
+| Mrs. Miniver                |      3 |
+| Network                     |      3 |
+| On the Waterfront           |      3 |
+| Terms of Endearment         |      3 |
+| The Best Years of Our Lives |      3 |
+| West Side Story             |      3 |
 
 2.  Of all actresses who have won the Best Actress award, what are is
     the most common first name?
@@ -62,17 +77,17 @@ most_awards <- oscars %>%
 ``` r
 common_name <- oscars %>% 
   filter(award == "Best Actress") %>% 
-  mutate(first_name = word(person,1)) %>% 
+  distinct(person)%>%  ## make sure each actress is only counted once
+  mutate(first_name = word(person,1)) %>%  ## get their first names
   group_by(first_name) %>% 
-  count() %>% 
+  count() %>%  ## count the number of women with the same first name
   ungroup() %>% 
-  filter(n == max(n))
+  filter(n == max(n)) ## only output the most common
 ```
 
 | first\_name | n |
 | :---------- | -: |
-| Hilary      | 4 |
-| Katharine   | 4 |
+| Helen       | 3 |
 
 3.  What US State, or non-US country, has produced the most Oscar
     winners (for the awards in this dataset)?
@@ -81,6 +96,8 @@ common_name <- oscars %>%
 
 ``` r
 common_birthplace <- oscars %>% 
+  select(person, birthplace) %>% 
+  distinct() %>% 
   group_by(birthplace) %>%
   count() %>% 
   ungroup() %>% 
@@ -89,4 +106,7 @@ common_birthplace <- oscars %>%
 
 | birthplace    |  n |
 | :------------ | -: |
-| New York City | 35 |
+| New York City | 27 |
+
+The most common birthplace is New York, since New York City has produced
+the most Oscar winners.

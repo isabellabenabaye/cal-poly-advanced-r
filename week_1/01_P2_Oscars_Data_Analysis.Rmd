@@ -23,6 +23,24 @@ For `date_of_birth`:
 * Some of the dates have years that are 2 digits, some 4. If we simply use `dmy()`, the years before 1969 will be put in the 21st century instead of the 20th.   
 * There is one person who only has a birth year listed.    
 
+```{r age function, message=FALSE, warning=FALSE, include=FALSE}
+age_years <- function(earlier, later)
+{
+    lt <- data.frame(earlier, later)
+    age <- as.numeric(format(lt[,2],format="%Y")) - as.numeric(format(lt[,1],format="%Y"))
+    
+    dayOnLaterYear <- ifelse(format(lt[,1],format="%m-%d")!="02-29",
+                             as.Date(paste(format(lt[,2],format="%Y"),"-",format(lt[,1],format="%m-%d"),sep="")),
+                             ifelse(as.numeric(format(later,format="%Y")) %% 400 == 0 | as.numeric(format(later,format="%Y")) %% 100 != 0 & as.numeric(format(later,format="%Y")) %% 4 == 0,
+                                    as.Date(paste(format(lt[,2],format="%Y"),"-",format(lt[,1],format="%m-%d"),sep="")),
+                                    as.Date(paste(format(lt[,2],format="%Y"),"-","02-28",sep=""))))
+    
+    age[which(dayOnLaterYear > lt$later)] <- age[which(dayOnLaterYear > lt$later)] - 1
+    
+    age
+}
+```
+
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 oscars$date_of_birth <- str_replace_all(oscars$date_of_birth," [1]","")
 oscars <- oscars %>% 
@@ -32,7 +50,14 @@ oscars <- oscars %>%
   mutate(birthyear = case_when(str_length(birthyear) == 2 ~ paste0("19",birthyear),  ## add the century to the birth year
                                str_length(day) == 4 ~ day,  ## address the obs with only the year
                                TRUE ~ birthyear),
-         dob = ymd(paste(birthyear,month,day,sep = " ")))  ## get the formatted birthday
+         dob = ymd(paste(birthyear,month,day,sep = " ")),  ## get the formatted birthday
+         award_dt = ymd(paste(year_of_award,"Feb","1", sep = " ")),
+         ## calculate the person's age using the function age_years() from https://raw.githubusercontent.com/nzcoops/r-code/master/age_function.R
+         age = age_years(as.Date(dob), as.Date(award_dt)),
+         gender = case_when(award %in% c("Best Actor", "Best Supporting Actor") ~ "M",
+                            award %in% c("Best Actress", "Best Supporting Actress") ~ "F",
+                            TRUE ~ NA_character_)) 
+
 ```
 
 ## Warm-ups
@@ -41,10 +66,12 @@ oscars <- oscars %>%
 
 ```{r paged.print=FALSE}
 most_awards <- oscars %>% 
+  select(movie,award) %>% 
+  distinct() %>%   ## make sure there are no duplicates
   group_by(movie) %>% 
-  count(name = "awards") %>% 
+  count(name = "awards") %>%  ## count the number of awards per movie
   ungroup() %>% 
-  filter(awards == max(awards))
+  filter(awards == max(awards))  ## only get the top movies with the most unique awards
 ```
 ```{r echo=FALSE}
 knitr::kable(most_awards)
@@ -55,11 +82,12 @@ knitr::kable(most_awards)
 ```{r paged.print=TRUE}
 common_name <- oscars %>% 
   filter(award == "Best Actress") %>% 
-  mutate(first_name = word(person,1)) %>% 
+  distinct(person)%>%  ## make sure each actress is only counted once
+  mutate(first_name = word(person,1)) %>%  ## get their first names
   group_by(first_name) %>% 
-  count() %>% 
+  count() %>%  ## count the number of women with the same first name
   ungroup() %>% 
-  filter(n == max(n))
+  filter(n == max(n)) ## only output the most common
 ```
 ```{r echo=FALSE}
 knitr::kable(common_name)
@@ -71,6 +99,8 @@ knitr::kable(common_name)
 
 ```{r}
 common_birthplace <- oscars %>% 
+  select(person, birthplace) %>% 
+  distinct() %>% 
   group_by(birthplace) %>%
   count() %>% 
   ungroup() %>% 
@@ -79,4 +109,8 @@ common_birthplace <- oscars %>%
 ```{r echo=FALSE}
 knitr::kable(common_birthplace)
 ```
+
+The most common birthplace is New York, since New York City has produced the most Oscar winners.
+
+## Age and Gender
 

@@ -1,0 +1,127 @@
+---
+title: "Challenge 1: Exploring the Superheros"
+# author: "Isabella Benabaye"
+# date: "4/12/2020"
+output: github_document
+---
+> **The dataset:** https://www.kaggle.com/claudiodavi/superhero-set    
+> **Research question:** How are *good* and *evil* superheroes different?    
+> **Challenge:** Find in the dataset the most interesting quality that tends to differentiate *good* and *evil*.
+
+## Import libraries and data
+```{r import libraries, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+The data was downloaded from Kaggle and the `.csv` files are in the `/data` folder. Let's import it:
+
+```{r import data, message=FALSE, warning=FALSE}
+# hero characteristics table
+heroes <- read_csv("data/heroes_information.csv") %>% 
+  filter(Alignment %in% c("good","bad")) %>% 
+  mutate(Gender = as_factor(Gender),
+         `Eye color` = as_factor(`Eye color`),
+         Race = as_factor(Race),
+         `Hair color` = as_factor(`Hair color`),
+         Publisher = as_factor(Publisher),
+         `Skin color` = as_factor(`Skin color`),
+         Alignment = as_factor(Alignment))
+
+# hero powers table
+powers <- read_csv("data/super_hero_powers.csv")
+
+# join - full profile (some records from 'heroes' lost)
+profile <- heroes %>% 
+  inner_join(powers, by = c("name" = "hero_names"))
+```
+
+```{r theme, message=FALSE, warning=FALSE, include=FALSE}
+library(extrafont)
+loadfonts(device = "win", quiet = TRUE) ## to load the font
+theme_set(theme_minimal())
+theme <- theme_update(text = element_text(family = "Franklin Gothic", size = 16),
+                      title = element_text("Franklin Gothic", size = 20, color = "gray20"),
+                      plot.title = element_text("Franklin Gothic", size = 30, color = "gray20"),
+                      plot.subtitle = element_text("Source Sans Pro Light", size = 20, color = "gray20"),
+                      axis.text = element_text("Franklin Gothic", size = 16),
+                      axis.line.x = element_line(color = "gray80"),
+                      axis.line.y = element_line(color = "gray80"))
+```
+
+```{r summarize, eval=FALSE, include=FALSE}
+## Data Exploration
+summary(heroes)
+glimpse(heroes)
+```
+
+## Let's look at Super Strength
+
+```{r plot}
+profile %>% 
+  ggplot(aes(x = Alignment, fill = `Super Strength`)) +  ## only look at the 'Super strength' column
+  geom_bar() +
+  ## styling
+  labs(x = "",
+       y = "# of heroes",
+       fill = "") +
+  scale_x_discrete(labels = c("Good","Bad")) +
+  scale_fill_manual(values = c("#FFD275", "#2DC7FF"),
+                    guide = guide_legend(reverse=TRUE),
+                    labels = c("No super strength", "Super strength"))
+
+``` 
+```{r save plot, include=FALSE}
+ggsave(here::here("week_1", "Superheroes - strength.png"), device = "png", width = 8, height = 5, dpi = 300)
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+tbl <- table(profile$Alignment,profile$`Super Strength`)
+knitr::kable(tbl)
+```
+
+
+Looks like villains are more likely to have super strength than heroes. Let's try out a Pearson's Chi-squared test.
+
+
+```{r chi-squared test}
+chisq.test(tbl)
+```
+The test reveals that with a significance level of 0.05, we can say that the alignment of the character is not independent from whether they have super powers or not. 
+
+## How about gender?
+
+```{r}
+heroes <- heroes %>% 
+  filter(Gender %in% c("Female","Male")) %>% 
+  droplevels()  ## drop unused level "-"
+
+heroes %>%  
+  ggplot(aes(x = Alignment, fill = Gender)) +
+  geom_bar() +
+  ## styling
+  labs(x = "",
+       y = "# of heroes",
+       fill = "") +
+  scale_x_discrete(labels = c("Good","Bad")) +
+  scale_fill_manual(values = c("#205B9D", "#C9268B"))
+```
+
+```{r echo=FALSE}
+knitr::kable(tbl)
+```
+
+Seems like many more villains are males than females.
+
+```{r include=FALSE}
+tbl <- table(heroes$Alignment,heroes$Gender)
+```
+
+```{r}
+chisq.test(tbl)
+```
+
+
+```{r save plot 2, include=FALSE}
+ggsave(here::here("week_1", "Superheroes - gender.png"), device = "png", width = 8, height = 5, dpi = 300)
+```
+
+The test reveals that with a significance level of 0.05, just like with super powers, we can say that the alignment of the character is not independent from their gender. In this case, it seems like more males are villains than females.

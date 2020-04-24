@@ -1,6 +1,8 @@
 ---
 title: "ggplot2 examples and exercises"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -45,8 +47,8 @@ packages <- c(
   'remotes'
 )
 # Uncomment the next lines (remove the first #) to install the packages
-install.packages(packages)
-remotes::install_github("hrbrmstr/hrbrthemes")
+#install.packages(packages)
+#remotes::install_github("hrbrmstr/hrbrthemes")
 # Load standard packages
 library(ggplot2)
 ```
@@ -590,6 +592,8 @@ the middle plot takes up half of the total space:
 p <- ggplot(mtcars) + 
   geom_point(aes(x = disp, y = mpg))
 p + p + p
+p + p + p + plot_layout(widths = c(1,2,1))
+p + p + p + plot_layout(widths = unit(c(8,1,1), c('cm', 'null', 'null')))
 ```
 
 * * *
@@ -603,6 +607,7 @@ p1 <- ggplot(mtcars[mtcars$gear == 3,]) +
 p2 <- ggplot(mtcars[mtcars$gear == 4,]) + 
   geom_point(aes(x = disp, y = mpg))
 p1 + p2
+p1 + p2 & scale_y_continuous(limits = c(10,40))
 ```
 
 * * *
@@ -626,6 +631,8 @@ AA#
 C##
 '
 p1 + p2 + p3 + plot_layout(design = layout)
+
+
 ```
 
 ### Animation
@@ -665,6 +672,11 @@ ggplot(mpg) +
   geom_point(aes(x = displ, y = hwy)) + 
   ggtitle("Cars with {closest_state} cylinders") + 
   transition_states(factor(cyl))
+
+ggplot(mpg) + 
+  geom_point(aes(x = displ, y = hwy, group = seq_len(nrow(mpg)))) + 
+  ggtitle("Cars with {closest_state} cylinders") + 
+  transition_states(factor(cyl))
 ```
 
 gganimate uses the `group` aesthetic to match observations between states. By 
@@ -702,6 +714,13 @@ ggplot(mpg2) +
   geom_point(aes(x = displ, y = value)) + 
   ggtitle("{if (closest_state == 'cty') 'Efficiency in city' else 'Efficiency on highway'}") + 
   transition_states(name)
+
+mpg2 <- tidyr::pivot_longer(mpg, c(cty,hwy))
+ggplot(mpg2) + 
+  geom_point(aes(x = displ, y = value)) + 
+  ggtitle("{if (closest_state == 'cty') 'Efficiency in city' else 'Efficiency on highway'}") + 
+  transition_states(name) +
+  ease_aes(y = "cubic-in-out")
 ```
 
 ### Annotation
@@ -735,6 +754,41 @@ ggplot(mtcars, aes(x = disp, y = mpg)) +
   geom_mark_ellipse(aes(filter = gear == 4,
                         label = '4 gear cars',
                         description = 'Cars with fewer gears tend to both have higher yield and lower displacement'))
+
+ggplot(mtcars, aes(x = disp, y = mpg)) +
+  geom_point() + 
+  geom_mark_rect(aes(filter = gear == 4,
+                        label = '4 gear cars',
+                        description = 'Cars with fewer gears tend to both have higher yield and lower displacement'))
+ggplot(mtcars, aes(x = disp, y = mpg)) +
+  geom_point() + 
+  geom_mark_rect(aes(filter = gear == 4,
+                        label = '4 gear cars',
+                        description = 'Cars with fewer gears tend to both have higher yield and lower displacement'),radius = 0)
+
+ggplot(mtcars, aes(x = disp, y = mpg)) +
+  geom_point() + 
+  geom_mark_circle(aes(filter = gear == 4,
+                        label = '4 gear cars',
+                        description = 'Cars with fewer gears tend to both have higher yield and lower displacement'),radius = 0)
+
+ggplot(mtcars, aes(x = disp, y = mpg)) +
+  geom_point() + 
+  geom_mark_circle(aes(filter = gear == 4,
+                        label = '4 gear cars',
+                        description = 'Cars with fewer gears tend to both have higher yield and lower displacement')) +
+  coord_cartesian(clip = "off")
+
+ggplot(mtcars, aes(x = disp, y = mpg)) +
+  geom_point() + 
+  geom_mark_hull(aes(filter = gear == 4,
+                        label = '4 gear cars',
+                        description = 'Cars with fewer gears tend to both have higher yield and lower displacement'), concavity = 10)
+
+ggplot(mtcars, aes(x = disp, y = mpg)) +
+  geom_point() + 
+  geom_mark_hull(aes(fill = factor(gear), label = gear))
+
 ```
 
 #### Exercises
@@ -748,6 +802,10 @@ plot below where you only label 10 random points.
 mtcars2 <- mtcars
 mtcars2$label <- rownames(mtcars2)
 points_to_label <- sample(nrow(mtcars), 10)
+mtcars2$label[-points_to_label] <- ""
+ggplot(mtcars2, aes(x = disp, y = mpg)) + 
+  geom_point() + 
+  geom_text_repel(aes(label = label), data = mtcars2[points_to_label,])
 ggplot(mtcars2, aes(x = disp, y = mpg)) + 
   geom_point() + 
   geom_text_repel(aes(label = label))
@@ -764,6 +822,12 @@ mtcars2$label[1:10] <- rownames(mtcars2)[1:10]
 ggplot(mtcars2, aes(x = disp, y = mpg)) + 
   geom_point() + 
   geom_text_repel(aes(label = label))
+
+mtcars2$label <- ""
+mtcars2$label[1:10] <- rownames(mtcars2)[1:10]
+ggplot(mtcars2, aes(x = disp, y = mpg)) + 
+  geom_point() + 
+  geom_text_repel(aes(label = label), direction = 'y')
 ```
 
 * * *
@@ -788,9 +852,9 @@ library(tidygraph)
 graph <- create_notable('zachary') %>% 
   mutate(clique = as.factor(group_infomap()))
 ggraph(graph) + 
-  geom_mark_hull(aes(x, y, fill = clique)) + 
-  geom_edge_link() + 
-  geom_node_point(size = 2)
+  geom_mark_hull(aes(x, y, fill = clique)) +  ## colored by group using ggforce 
+  geom_edge_link() +  ## the lines that connect the points
+  geom_node_point(size = 2)  ## the points
 ```
 
 dendrograms are just a specific type of network
@@ -817,6 +881,7 @@ ggraph(graph) +
   geom_edge_link() + 
   geom_node_point(aes(colour = clique), size = 3)
 ```
+
 
 * * *
 

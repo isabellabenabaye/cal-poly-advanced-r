@@ -1,0 +1,139 @@
+---
+title: "Week 2 - Maps with Leaflet"
+author: "Isabella Benabaye"
+date: "4/23/2020"
+output: html_document
+---
+This is part of the Lecture and Exercises section of Cal Poly's Stat 431 - Week 2.
+
+[Reference Videos](https://www.youtube.com/watch?v=6Uz5KBZ8V5E)
+
+# Using Leaflet in R part 1 of 6
+
+```{r import}
+library(leaflet)
+
+my_map <- leaflet() %>%  ## creating a blank map widget/background
+  addTiles()  ## adding the mapping data from Open Street Map
+
+my_map
+```
+
+# Using Leaflet in R part 2 of 6
+
+```{r}
+my_map <- my_map %>% 
+  addMarkers(lat = 39.2980803, lng = -76.5898801,
+             popup = "Jeff Leek's Office")
+my_map
+```
+
+# Using Leaflet in R part 3 of 6 - Adding many markers from a dataset
+The dataframe must have the variables `lat` and `lng`.
+
+```{r}
+set.seed(2016-04-25)
+
+df <- tibble::tibble(lat = runif(20, min = 39.2, max = 39.3),
+                     lng = runif(20, min = -76.6, max = -76.5))
+df %>% 
+  leaflet() %>%  ## creating a blank map widget/background
+  addTiles() %>% ## adding the mapping data from Open Street Map
+  addMarkers()   ## add the markers/pins
+```
+
+# Using Leaflet in R part 4 of 6 - Making Custom Markers and Pop-ups for Each Marker
+
+```{r}
+# get icons
+hopkinsIcon <- makeIcon(
+  iconUrl = "https://image.flaticon.com/icons/svg/619/619181.svg",
+  iconWidth = 31*215/230, iconHeight = 31,
+  iconAnchorX = 31*215/230/2, iconAnchorY = 16
+)
+
+# data locations
+hopkinsLatLong <- data.frame(
+  lat = c(39.2973166, 39.3288851, 39.2906617),
+  lng = c(-76.5929798, -76.6206598, -76.5469683))
+
+# define url links to be made into pop ups
+hopkinsSites <- c(
+  "<a href='http://www.jhsph.edu/'>East Baltimore Campus</a>",
+  "<a href='https://apply.jhu.edu/visit/homewood/'>Homewood Campus</a>",
+  "<a href='http://www.hopkinsmedicine.org/johns_hopkins_bayview/'>Bayview Medical Center</a>",
+  "<a href='http://www.peabody.jhu.edu/'>Peabody Institute</a>",
+  "<a href='http://carey.jhu.edu/'>Carey Business School</a>"
+)
+
+hopkinsLatLong %>% 
+  leaflet() %>% 
+  addTiles() %>% 
+  addMarkers(icon = hopkinsIcon, popup = hopkinsSites)
+```
+
+# Using Leaflet in R part 5 of 6 - Mapping Clusters
+
+```{r}
+df <- data.frame(lat = runif(500, min = 39.25, max = 39.35),
+                 lng = runif(500, min = -76.65, max = -76.55))
+df %>% 
+  leaflet() %>%
+  addTiles() %>%
+  addMarkers(clusterOptions = markerClusterOptions())
+```
+
+## Mapping Circle Markers
+Instead of adding markers or clusters you can easily add circle markers using addCircleMarkers().
+```{r}
+df <- data.frame(lat = runif(20, min = 39.25, max = 39.35),
+                 lng = runif(20, min = -76.65, max = -76.55))
+df %>% 
+  leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers()
+```
+
+# Using Leaflet in R part 6 of 6 - Drawing Shapes
+
+```{r}
+md_cities <- data.frame(name = c("Baltimore", "Frederick", "Rockville", "Gaithersburg", 
+                                 "Bowie", "Hagerstown", "Annapolis", "College Park", "Salisbury", "Laurel"),
+                        pop = c(619493, 66169, 62334, 61045, 55232,
+                                39890, 38880, 30587, 30484, 25346),
+                        lat = c(39.2920592, 39.4143921, 39.0840, 39.1434, 39.0068, 39.6418, 38.9784, 38.9897, 38.3607, 39.0993),
+                        lng = c(-76.6077852, -77.4204875, -77.1528, -77.2014, -76.7791, -77.7200, -76.4922, -76.9378, -75.5994, -76.8483))
+
+## Drawing circles
+md_cities %>%
+  leaflet() %>%
+  addTiles() %>%
+  addCircles(weight = 10, ## outine of the circle
+             radius = sqrt(md_cities$pop) * 30) ## scaling the radius
+
+## Drawing rectangles
+leaflet() %>%
+  addTiles() %>%
+  addRectangles(lat1 = 37.3858, lng1 = -122.0595, 
+                lat2 = 37.3890, lng2 = -122.0625)
+
+## Adding legends
+df <- data.frame(lat = runif(20, min = 39.25, max = 39.35),
+                 lng = runif(20, min = -76.65, max = -76.55),
+                 col = sample(c("red", "blue", "green"), 20, replace = TRUE),
+                 stringsAsFactors = FALSE)
+
+df %>%
+  leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(color = df$col) %>%
+  addLegend(labels = LETTERS[1:3], colors = c("blue", "red", "green"))
+```
+
+# Choropleth maps (from the leaflet site)
+
+```{r}
+states <- geojson::geojson_read("json/us-states.geojson", what = "sp")
+class(states)
+```
+

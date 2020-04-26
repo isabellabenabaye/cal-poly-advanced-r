@@ -77,10 +77,14 @@ vaccines_safe <- vaccines_safe %>%
   clean_names() %>%   ## clean up the column names) 
   pivot_wider(id_cols = country, names_from = response, values_from = column_n_percent) %>% 
   clean_names() %>%   ## clean up the column names) 
-  mutate(safe_agree = strongly_agree + somewhat_agree) %>% 
+  mutate(safe_agree = strongly_agree + somewhat_agree) %>%  ##  combine agreeing responses
+  
+  # join tables
   left_join(countries, by = "country") %>% 
   left_join(regions, by = c("country_code" = "wp5")) %>% 
   left_join(region_names, by = c("regions_report" = "region")) %>% 
+  
+  # group the regions
   mutate(region_group = case_when(grepl("America", region_names) ~ "Americas",
                                   grepl("Asia", region_names) ~ "Asia",
                                   grepl("Europe", region_names) ~ "Europe",

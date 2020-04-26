@@ -47,7 +47,7 @@ Below is the question we're interested in. We will extract only those rows from 
 
 > Q25 Do you strongly or somewhat agree, strongly or somewhat disagree or neither agree nor disagree with the following statement? Vaccines are safe.
 
-```{r data prep}
+```{r PT1 data prep}
 vaccines_safe <- readxl::read_xlsx("data/wgm2018-dataset-crosstabs-all-countries.xlsx", sheet = "Crosstabs all countries", range = cellranger::cell_limits(c(3, 1), c(NA, 5)))
 
 countries <- readxl::read_xlsx("data/wgm2018-dataset-crosstabs-all-countries.xlsx", sheet = "Data dictionary", range = "C1:C2") %>% 
@@ -60,11 +60,11 @@ countries <- tibble(country = countries[[1]]) %>%
   separate(country, c("country_code","country"), "=") %>% 
   mutate(country_code = as.numeric(country_code))
 
-regions <- readxl::read_xlsx("data/wgm2018-dataset-crosstabs-all-countries.xlsx", sheet = "Full dataset") %>% 
-  clean_names() %>% 
-  select(wp5,regions_report)
+full <- readxl::read_xlsx("data/wgm2018-dataset-crosstabs-all-countries.xlsx", sheet = "Full dataset") %>% 
+  clean_names()
 
-regions <- regions %>% 
+regions <- full %>% 
+  select(wp5,regions_report) %>% 
   distinct(wp5,regions_report)
 
 
@@ -99,7 +99,7 @@ vaccines_safe <- vaccines_safe %>%
 ```
 
 
-```{r}
+```{r PT1 plot}
 # make a table of the regions for the plot labels
 region_labels = vaccines_safe %>% 
       filter(region_group != "OTHER") %>% 
@@ -107,10 +107,10 @@ region_labels = vaccines_safe %>%
 
 vaccines_safe %>%
   filter(region_group != "OTHER") %>% 
-  mutate(region_group = fct_reorder(region_group, safe_agree, .fun = 'median')) %>%
+  mutate(region_group = fct_reorder(region_group, safe_agree, .fun = 'median')) %>%  ## reorder the factors based on their median percentages
   ggplot(aes(x = safe_agree, y = factor(region_group), fill = factor(region_group))) +
-  stat_density_ridges(alpha = 0.8,quantile_lines = TRUE, quantiles = 2,
-                      jittered_points = TRUE, scale = .95, rel_min_height = .01,
+  stat_density_ridges(alpha = 0.8,quantile_lines = TRUE, quantiles = 2,           ## adding the median line
+                      jittered_points = TRUE, scale = .95, rel_min_height = .01,  ## adding the rug
                       point_shape = "|", point_size = 3, size = 0.25,
                       position = position_points_jitter(height = 0)) +
   labs(x = "% of people who think vaccines are safe", y = NULL,
@@ -118,9 +118,9 @@ vaccines_safe %>%
        subtitle = "Do you think vaccines are safe?",
        caption = "*each tick is one country\nSource: World Global Monitor (2018)") +
   scale_fill_paletteer_d("rcartocolor::Vivid") +
-  scale_x_continuous(labels = scales::percent, limits = c(0,1)) +
-  scale_y_discrete(expand = expansion(0,0)) +
-  geom_label(data = region_labels, aes(x = 0,label = region_group), nudge_x = 0.25, nudge_y = 0.5, color = "white",
+  scale_x_continuous(labels = scales::percent, limits = c(0,1)) +  ## making the axis display values in %
+  scale_y_discrete(expand = expansion(0,0)) +  ## remove whitespace
+  geom_label(data = region_labels, aes(x = 0,label = region_group), nudge_x = 0.25, nudge_y = 0.5, color = "white",  ## add global region labels
              size = 8,
              family = "Karla",
              fontface = "bold") +
@@ -130,11 +130,11 @@ vaccines_safe %>%
       panel.spacing = unit(0.1, "lines"),
       strip.text.x = element_text(size = 8),
       text = element_text(family = "Karla"),
-      axis.text.x = element_text(family = "Karla", size = 18),
-      axis.title.x = element_text(family = "Karla", size = 22),
+      axis.text.x = element_text(size = 18),
+      axis.title.x = element_text(size = 22),
       axis.text.y = element_blank(),
-      plot.title = element_text(family = "Karla", size = 30),
-      plot.subtitle = element_text(family = "Karla", size = 36),
+      plot.title = element_text(size = 30),
+      plot.subtitle = element_text(size = 36),
       plot.background = element_rect(fill = "#F3F4F6")
     )
 

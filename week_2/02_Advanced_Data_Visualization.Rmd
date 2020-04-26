@@ -1,0 +1,112 @@
+---
+title: "Lab 2: Advanced Data Visualization"
+author: "Isabella Benabaye"
+date: "4/25/2020"
+output: html_document
+---
+
+# Part 1: Identifying Bad Visualizations
+Below is an example of a less-than-ideal visualization from [Bad Visusalizations](https://badvisualisations.tumblr.com/post/185714513251/i-spent-a-few-minutes-trying-to-figure-out-what?is_highlighted_post=1). It comes to us from data provided for the Wellcome Global Monitor 2018 report by the Gallup World Poll 2018:
+![](https://66.media.tumblr.com/f30e7f16691156453a99ef0114d9afd1/tumblr_ptdgo117QR1xbq2wwo1_1280.jpg)
+
+1. While there are certainly issues with this image, do your best to tell the story of this graph in words. That is, what is this graph telling you? What do you think the authors meant to convey with it?
+
+It appears that the graph is trying to show the order of regions in which there are the most percentages of people in a country that believe vaccines are safe.
+
+2. List the variables that appear to be displayed in this visualization.
+
+pergentage of the population that believes vaccines are safe, region
+
+3. Now that you're versed in the grammar of graphics (ggplot), list the aesthetics used and which variables are specified for each.
+
+x = pergentage of the population that believes vaccines are safe
+y = ?
+color = region
+
+4. What type of graph would you call this?
+
+Scatterplot
+
+5. List all of the problems or things you would improve about this graph.
+
+* There is no clear y variable-- We don't know on what basis the points rise & there could be information loss because of this or an unclear picture of that the author was trying to convey.
+
+
+```{r import libraries, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+library(countrycode)
+library(ggridges)
+```
+
+Below is the question we're interested in. We will extract only those rows from the dataset.
+
+> Q25 Do you strongly or somewhat agree, strongly or somewhat disagree or neither agree nor disagree with the following statement? Vaccines are safe.
+
+```{r data prep}
+vaccines_safe <- readxl::read_xlsx("data/wgm2018-dataset-crosstabs-all-countries.xlsx", sheet = "Crosstabs all countries", range = cellranger::cell_limits(c(3, 1), c(NA, 5)))
+
+countries <- readxl::read_xlsx("data/wgm2018-dataset-crosstabs-all-countries.xlsx", sheet = "Data dictionary", range = "C1:C2") %>% 
+  clean_names()
+
+countries <- countries$variable_type_codes %>% 
+  str_split(", ")
+
+countries <- tibble(country = countries[[1]]) %>% 
+  separate(country, c("country_code","country"), "=") %>% 
+  mutate(country_code = as.numeric(country_code))
+
+regions <- readxl::read_xlsx("data/wgm2018-dataset-crosstabs-all-countries.xlsx", sheet = "Full dataset") %>% 
+  clean_names() %>% 
+  select(wp5,regions_report)
+
+regions <- regions %>% 
+  distinct(wp5,regions_report)
+
+
+# I'm going to cheat this one- copy-pasted from the source file
+region_names <- c("0=Not assigned,1=Eastern Africa,2=Central Africa,3=North Africa,4=Southern Africa,5=Western Africa,6=Central America and Mexico,7=Northern America,8=South America,9=Central Asia,10=East Asia,11=Southeast Asia,12=South Asia,13=Middle East,14=Eastern Europe,15=Northern Europe,16=Southern Europe,17=Western Europe,18=Aus/NZ")
+
+region_names <- str_split(region_names,",")
+region_names <- tibble(region_names = region_names[[1]]) %>% 
+  separate(region_names, c("region","region_names"), "=") %>% 
+  mutate(region = as.numeric(region))
+
+vaccines_safe <- vaccines_safe %>% 
+  filter(str_detect(Question,"Q25")) %>%  ## only get relevant rows
+  clean_names() %>%   ## clean up the column names) 
+  pivot_wider(id_cols = country, names_from = response, values_from = column_n_percent) %>% 
+  clean_names() %>%   ## clean up the column names) 
+  mutate(safe_agree = strongly_agree + somewhat_agree) %>% 
+  left_join(countries, by = "country") %>% 
+  left_join(regions, by = c("country_code" = "wp5")) %>% 
+  left_join(region_names, by = c("regions_report" = "region")) %>% 
+  mutate(region_group = case_when(grepl("America", region_names) ~ "Americas",
+                                  grepl("Asia", region_names) ~ "Asia",
+                                  grepl("Europe", region_names) ~ "Europe",
+                                  grepl("Africa", region_names) & region_names != "North Africa" ~ "Sub-saharan Africa",
+                                  region_names == "North Africa" | region_names == "Middle East" ~ "Middle East & North Africa",
+                                  TRUE ~ region_names))
+```
+
+
+```{r}
+vaccines_safe %>% 
+  ggplot(aes(x = safe_agree, y = factor(regions_report))) +
+  geom_density_ridges(
+        jittered_points = TRUE, scale = .95, rel_min_height = .01,
+    point_shape = "|", point_size = 3, size = 0.25,
+    position = position_points_jitter(height = 0)
+  )
+
+str(vaccines_safe)
+```
+
+```{r}
+ ggplot(Aus_athletes, aes(x = height, y = sport, color = sex, point_color = sex, fill = sex)) +
+  geom_density_ridges(
+    jittered_points = TRUE, scale = .95, rel_min_height = .01,
+    point_shape = "|", point_size = 3, size = 0.25,
+    position = position_points_jitter(height = 0)
+```
+

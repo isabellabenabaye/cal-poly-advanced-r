@@ -37,6 +37,10 @@ library(tidyverse)
 library(janitor)
 library(countrycode)
 library(ggridges)
+library(paletteer)
+library(extrafont)
+
+loadfonts(device = "win", quiet = TRUE) ## to load the font
 ```
 
 Below is the question we're interested in. We will extract only those rows from the dataset.
@@ -85,32 +89,55 @@ vaccines_safe <- vaccines_safe %>%
   left_join(region_names, by = c("regions_report" = "region")) %>% 
   
   # group the regions
-  mutate(region_group = case_when(grepl("America", region_names) ~ "Americas",
+  mutate(region_group = as_factor(case_when(grepl("America", region_names) ~ "Americas",
                                   grepl("Asia", region_names) ~ "Asia",
                                   grepl("Europe", region_names) ~ "Europe",
                                   grepl("Africa", region_names) & region_names != "North Africa" ~ "Sub-saharan Africa",
                                   region_names == "North Africa" | region_names == "Middle East" ~ "Middle East & North Africa",
-                                  TRUE ~ region_names))
+                                  TRUE ~ "OTHER")))
+
 ```
 
 
 ```{r}
-vaccines_safe %>% 
-  ggplot(aes(x = safe_agree, y = factor(regions_report))) +
-  geom_density_ridges(
-        jittered_points = TRUE, scale = .95, rel_min_height = .01,
-    point_shape = "|", point_size = 3, size = 0.25,
-    position = position_points_jitter(height = 0)
-  )
+# make a table of the regions for the plot labels
+region_labels = vaccines_safe %>% 
+      filter(region_group != "OTHER") %>% 
+      distinct(region_group)
 
-str(vaccines_safe)
-```
+vaccines_safe %>%
+  filter(region_group != "OTHER") %>% 
+  mutate(region_group = fct_reorder(region_group, safe_agree, .fun = 'median')) %>%
+  ggplot(aes(x = safe_agree, y = factor(region_group), fill = factor(region_group))) +
+  stat_density_ridges(alpha = 0.8,quantile_lines = TRUE, quantiles = 2,
+                      jittered_points = TRUE, scale = .95, rel_min_height = .01,
+                      point_shape = "|", point_size = 3, size = 0.25,
+                      position = position_points_jitter(height = 0)) +
+  labs(x = "% of people who think vaccines are safe", y = NULL,
+       title = "Regional attitudes towards vaccines:",
+       subtitle = "Do you think vaccines are safe?",
+       caption = "*each tick is one country\nSource: World Global Monitor (2018)") +
+  scale_fill_paletteer_d("rcartocolor::Vivid") +
+  scale_x_continuous(labels = scales::percent, limits = c(0,1)) +
+  scale_y_discrete(expand = expansion(0,0)) +
+  geom_label(data = region_labels, aes(x = 0,label = region_group), nudge_x = 0.25, nudge_y = 0.5, color = "white",
+             size = 8,
+             family = "Karla",
+             fontface = "bold") +
+  theme_ridges() +
+  theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8),
+      text = element_text(family = "Karla"),
+      axis.text.x = element_text(family = "Karla", size = 18),
+      axis.title.x = element_text(family = "Karla", size = 22),
+      axis.text.y = element_blank(),
+      plot.title = element_text(family = "Karla", size = 30),
+      plot.subtitle = element_text(family = "Karla", size = 36),
+      plot.background = element_rect(fill = "#F3F4F6")
+    )
 
-```{r}
- ggplot(Aus_athletes, aes(x = height, y = sport, color = sex, point_color = sex, fill = sex)) +
-  geom_density_ridges(
-    jittered_points = TRUE, scale = .95, rel_min_height = .01,
-    point_shape = "|", point_size = 3, size = 0.25,
-    position = position_points_jitter(height = 0)
+ggsave("Part one.png", device = "png", type = "cairo", width = 10, height = 9)
 ```
 

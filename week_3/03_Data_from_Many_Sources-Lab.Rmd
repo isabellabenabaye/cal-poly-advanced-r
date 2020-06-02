@@ -85,11 +85,11 @@ ISSicon <- makeIcon(iconUrl = "http://open-notify.org/Open-Notify-API/map/ISSIco
     iconWidth = 15, iconHeight = 15)
 
 # Map with leaflet
-m <- leaflet() %>%
+m <- leaflet(data = capitals_pass_times) %>%
   addTiles() %>%  # Add default OpenStreetMap map tiles
-  addMarkers(lng = ~lon, lat = ~lat, 
-             label = paste0(~capital, ", ",  ~state, " - Next predicted passtime: ", ~risetime_1),
-             popup = paste0(~capital, ", ",  ~state,  " - Next predicted passtimes: ", ~risetime_1, ", ", ~risetime_2, ", ", ~risetime_3), 
+  addMarkers(lng = ~lon, lat = ~lat,
+             label = paste0(capitals_pass_times$capital, ", ",  capitals_pass_times$state, " - Next predicted passtime: ", capitals_pass_times$risetime_1),
+             popup = paste0(capitals_pass_times$capital, ", ",  capitals_pass_times$state,  " - Next predicted passtimes: ", capitals_pass_times$risetime_1, ", ", capitals_pass_times$risetime_2, ", ", capitals_pass_times$risetime_3), 
              icon = ISSicon)
 
 m
@@ -102,8 +102,8 @@ route <- leaflet(data = capitals_pass_times) %>%
   addTiles() %>%  # Add default OpenStreetMap map tiles
   addPolylines(lat = ~lat, lng = ~lon, color = "red") %>% 
   addMarkers(lng = ~lon, lat = ~lat, 
-             label = paste0(~capital, ", ",  ~state, " - Next predicted passtime: ", ~risetime_1),
-             popup = paste0(~capital, ", ",  ~state,  " - Next predicted passtimes: ", ~risetime_1, ", ", ~risetime_2, ", ", ~risetime_3), 
+             label = paste0(capitals_pass_times$capital, ", ",  capitals_pass_times$state, " - Next predicted passtime: ", capitals_pass_times$risetime_1),
+             popup = paste0(capitals_pass_times$capital, ", ",  capitals_pass_times$state,  " - Next predicted passtimes: ", capitals_pass_times$risetime_1, ", ", capitals_pass_times$risetime_2, ", ", capitals_pass_times$risetime_3), 
              icon = ISSicon)
 
 route

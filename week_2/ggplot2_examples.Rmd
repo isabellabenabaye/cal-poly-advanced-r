@@ -1,8 +1,6 @@
 ---
 title: "ggplot2 examples and exercises"
-output:
-  pdf_document: default
-  html_document: default
+output: github_document
 ---
 
 ```{r setup, include=FALSE}

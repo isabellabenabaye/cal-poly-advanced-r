@@ -2,7 +2,7 @@
 title: "Lab 2: Advanced Data Visualization"
 author: "Isabella Benabaye"
 date: "4/25/2020"
-output: html_document
+output: github_document
 ---
 
 # Part 1: Identifying Bad Visualizations

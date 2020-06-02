@@ -116,7 +116,7 @@ vaccines_safe %>%
   labs(x = "% of people who think vaccines are safe", y = NULL,
        title = "Regional attitudes towards vaccines:",
        subtitle = "Do you think vaccines are safe?",
-       caption = "*each tick is one country\nSource: World Global Monitor (2018)") +
+       caption = "*each tick is one country\nSource: Wellcome Global Monitor (2018)") +
   scale_fill_paletteer_d("rcartocolor::Vivid") +
   scale_x_continuous(labels = scales::percent, limits = c(0,1)) +  ## making the axis display values in %
   scale_y_discrete(expand = expansion(0,0)) +  ## remove whitespace

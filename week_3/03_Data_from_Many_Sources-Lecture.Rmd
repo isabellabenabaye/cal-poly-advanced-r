@@ -1,0 +1,103 @@
+---
+title: "Lecture 3: Data from Many Sources"
+date: "5/31/2020"
+output: github_document
+---
+
+# SQLite in R
+
+```{r}
+library(dplyr)
+library(DBI)
+
+# connect to the chinook database
+con <- dbConnect(RSQLite::SQLite(), "data/chinook.db")
+
+# list the tables in the database
+dbListTables(con)
+```
+
+## Check-In 1: Chinook Database
+
+1. How many observations/rows are in the employees table?
+```{r}
+employees <- dbReadTable(con, "employees")
+nrow(employees)
+```
+
+There are 8 observations/rows.
+
+2. How many different job titles are included in the employees table?
+```{r}
+employees %>% 
+  distinct(Title) %>% 
+  count()
+```
+
+There are 5 different job titles.
+
+3. What is the average of the Total variable in the invoices table?
+```{r}
+invoices <- dbReadTable(con, "invoices")
+mean(invoices$Total)
+```
+
+5.651942 is the averafe of the Total variable in the invoices table.
+
+# Application Programming Interfaces (APIs)
+
+Source: https://www.dataquest.io/blog/r-api-tutorial/
+
+```{r}
+library(httr)
+library(jsonlite)
+```
+
+There are several types of requests that one can make to an API server. These types of requests correspond to different actions that you want the server to make.
+
+For our purposes, we’ll just be asking for data, which corresponds to a GET request. In order to create a GET request, we need to use the GET() function from the httr library. The GET() function requires a URL, which specifies the address of the server that the request needs to be sent to.
+
+For our example, we’ll be working with the Open Notify API, which opens up data on various NASA projects. Using the Open Notify API, we can learn about the location of the International Space Station and how many people are currently in space.
+
+```{r}
+response = GET("http://api.open-notify.org/astros.json")
+```
+
+The `response` variable contains the response of the API server to our request. The content type gives us an idea of what form the data takes. This particular response says that the data takes on a json format. The status deserves some special attention. "Status" refers to the success or failure of the API request, and it comes in the form of a number. The number returned tells you whether or not the request was a success and can also detail some reasons why it might have failed. The number 200 is what we want to see; it corresponds to a successful request, and that’s what we have here.
+
+In its current state, the data in the `response` variable is not usable. The actual data is contained as raw Unicode in the `response` list, which ultimately needs to be converted into JSON format.
+
+To do this, we first need to convert the raw Unicode into a character vector that resembles the JSON format shown above. The `rawToChar()` function performs just this task, as shown below:
+
+```{r}
+rawToChar(response$content)
+```
+
+From a character vector, we can convert it into `list` data structure using the fromJSON() function from the `jsonlite` library.
+
+```{r}
+data <- response$content %>% 
+  rawToChar() %>% fromJSON()
+
+names(data)
+data$people
+```
+
+## APIs and Query Parameters
+
+What if we wanted to know when the ISS was going to pass over a given location on earth? Unlike the People in Space API, Open Notify’s ISS Pass Times API requires us to provide additional parameters before it can return the data we want.
+
+Specifically, we'll need to specify the latitude and longitude of the location we're asking about as part of our GET() request. Once a latitude and longitude are specified, they are combined with the original URL as query parameters.
+
+Let's use this API to find out when the ISS will be passing over the Brooklyn Bridge (which is at roughly latitude 40.7, longitude: -74):
+
+```{r}
+response = GET("http://api.open-notify.org/iss-pass.json",query = list(lat = 40.7, lon = -74))
+
+# Checking the URL that gets used in the API request yields
+# http://api.open-notify.org/iss-pass.json?lat=40.7&lon=-74
+
+data <- response$content %>% rawToChar() %>% fromJSON()
+data$response
+```
+

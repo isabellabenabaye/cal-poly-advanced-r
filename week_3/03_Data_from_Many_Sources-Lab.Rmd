@@ -1,0 +1,111 @@
+---
+title: "Lab 3: Data from Many Sources"
+date: "5/31/2020"
+output: github_document
+---
+# The Open-Notify API
+One of the Open-Notify APIs provides predictions of pass times for a given location when given the corresponding latitude, longitude, and altitude are given: http://open-notify.org/Open-Notify-API/ISS-Pass-Times/
+
+## Pass Times for U.S. State Captials
+
+```{r}
+library(tidyverse)
+library(httr)
+library(jsonlite)
+
+# Get the long & lats of all the US state capitals
+capitals <- read.table("https://people.sc.fsu.edu/~jburkardt/datasets/states/state_capitals_ll.txt", col.names = c("state","latitude","longitude"))
+capital_names <- read.table("https://people.sc.fsu.edu/~jburkardt/datasets/states/state_capitals_name.txt", col.names = c("state","capital"))
+
+capitals <- bind_cols(capitals,capital_names)
+
+# Getting the data for the first state
+response <- GET("http://api.open-notify.org/iss-pass.json", query = list(lat = capitals$latitude[1], lon = capitals$longitude[1]))
+# Extract the data from the response
+data = fromJSON(rawToChar(response$content))
+# Looking at the first passtime
+data$response[1,]
+# Convert unix time to datetime
+as.POSIXct(as.numeric(data$response[1,][2]), origin="1970-01-01")
+
+# Initialize dataframe
+capitals_pass_times <- tibble(state = character(),
+       capital = character(),
+       lat = numeric(),
+       lon = numeric(),
+       duration = numeric(),
+       risetime_num = character(),
+       risetime = numeric())
+
+# Add the next 3 predicted pass times to dataframe
+for (i in 1:3) {
+  capitals_pass_times <- capitals_risetimes %>% add_row(state = capitals$state[1],
+       capital = capitals$capital[1],
+       lat = capitals$latitude[1], 
+       lon = capitals$longitude[1],
+       duration = as.numeric(data$response[i,]["duration"]),
+       risetime_num = paste("risetime_",i),
+       risetime = as.numeric(data$response[i,]["risetime"]))
+  }
+
+# Loop for all states
+for (s in 1:nrow(capitals)) {
+  # Getting the data for the first state
+  response <- GET("http://api.open-notify.org/iss-pass.json", query = list(lat = capitals$latitude[s], lon = capitals$longitude[s]))
+  # Extract the data from the response
+  data = fromJSON(rawToChar(response$content))
+  # Add the next 3 predicted pass times to dataframe
+  for (i in 1:3) {
+  capitals_pass_times <- capitals_pass_times %>% add_row(state = capitals$state[s],
+       capital = capitals$capital[s],
+       lat = capitals$latitude[s], 
+       lon = capitals$longitude[s],
+       duration = as.numeric(data$response[i,]["duration"]),
+       risetime_num = paste0("risetime_",i),
+       risetime = as.numeric(data$response[i,]["risetime"]))
+  }
+}
+```
+
+# Mapping the Data
+
+```{r}
+library(leaflet)
+
+# Pivot table
+capitals_pass_times <- pivot_wider(capitals_pass_times, id_cols = c(state,capital,lat,lon), names_from = risetime_num, values_from = risetime)
+
+# Convert unix time to datetime
+capitals_pass_times <- capitals_pass_times %>% 
+  mutate_at(c("risetime_1", "risetime_2", "risetime_3"), ~as.POSIXct(., origin="1970-01-01")) %>% 
+  arrange(risetime_1)
+
+# Get ISS icon
+ISSicon <- makeIcon(iconUrl = "http://open-notify.org/Open-Notify-API/map/ISSIcon.png",
+    iconWidth = 15, iconHeight = 15)
+
+# Map with leaflet
+m <- leaflet() %>%
+  addTiles() %>%  # Add default OpenStreetMap map tiles
+  addMarkers(lng = ~lon, lat = ~lat, 
+             label = paste0(~capital, ", ",  ~state, " - Next predicted passtime: ", ~risetime_1),
+             popup = paste0(~capital, ", ",  ~state,  " - Next predicted passtimes: ", ~risetime_1, ", ", ~risetime_2, ", ", ~risetime_3), 
+             icon = ISSicon)
+
+m
+```
+
+# Drawing the Route of the ISS
+
+```{r}
+route <- leaflet(data = capitals_pass_times) %>%
+  addTiles() %>%  # Add default OpenStreetMap map tiles
+  addPolylines(lat = ~lat, lng = ~lon, color = "red") %>% 
+  addMarkers(lng = ~lon, lat = ~lat, 
+             label = paste0(~capital, ", ",  ~state, " - Next predicted passtime: ", ~risetime_1),
+             popup = paste0(~capital, ", ",  ~state,  " - Next predicted passtimes: ", ~risetime_1, ", ", ~risetime_2, ", ", ~risetime_3), 
+             icon = ISSicon)
+
+route
+```
+

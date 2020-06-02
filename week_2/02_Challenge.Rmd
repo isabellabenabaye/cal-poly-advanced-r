@@ -1,0 +1,116 @@
+---
+title: "Challenge 2"
+author: "Isabella Benabaye"
+date: "4/26/2020"
+output: html_document
+---
+**The Research Question:** How are political ads created and funded?
+
+The dataset: https://www.kaggle.com/fec/independent-political-ad-spending
+
+```{r}
+library(tidyverse)
+
+ind_expenditures <- read_csv("data/fec-independent-expenditures.csv")
+
+ind_expenditures <- ind_expenditures %>% 
+  select(committee_id,committee_name, 
+         report_year, report_type, payee_name, 
+         expenditure_amount, expenditure_date, category_code, category_code_full, 
+         support_oppose_indicator, 
+         candidate_id, candidate_name, candidate_office, cand_office_state, cand_office_district, 
+         election_type, election_type_full)
+
+names(ind_expenditures)
+skimr::skim(ind_expenditures)
+glimpse(ind_expenditures)
+visdat::vis_dat(ind_expenditures)
+
+
+```
+
+```{r}
+general <- ind_expenditures %>% 
+  filter(election_type_full == "GENERAL")
+skimr::skim(GENERAL)
+
+general %>% 
+  count(candidate_name, sort = TRUE)
+
+election2016 <- general %>% filter(str_detect(candidate_name, "CLINTON") | str_detect(candidate_name, "TRUMP"))
+         
+         report_year == 2016 & 
+gen_election_2016 %>% 
+  count(candidate_name, sort = TRUE)
+```
+
+```{r}
+gen_election_2016 <- general %>% 
+  filter(report_year == 2016,
+    str_detect(candidate_name, regex("clinton",ignore_case = TRUE)) | str_detect(candidate_name, regex("trump",ignore_case = TRUE) )) %>% 
+  mutate(candidate_name = if_else(str_detect(candidate_name, regex("clinton",ignore_case = TRUE)),"Clinton","Trump"))
+
+gen_election_2016 %>% 
+  group_by(candidate_name, support_oppose_indicator) %>% 
+  summarise(exp = sum(expenditure_amount))
+head(gen_election_2016)
+```
+
+```{r}
+library(gganimate)
+gen_election_2016000 <- gen_election_2016 %>% 
+  arrange(expenditure_date) %>% 
+  group_by(candidate_name) %>% 
+  mutate(exp_cum = cumsum(expenditure_amount))
+
+test <- gen_election_2016 %>% 
+  select(candidate_name, expenditure_amount,exp)
+
+bar <- gen_election_2016000 %>% 
+  filter(!is.na(support_oppose_indicator),!is.na(expenditure_amount), expenditure_date >= as.Date("2016-07-01")) %>% 
+  group_by(expenditure_date) %>% 
+  ggplot(aes(x = candidate_name, y = expenditure_amount, fill = support_oppose_indicator)) +
+  geom_col() +
+  coord_flip()
+bar
+bar + transition_states(expenditure_date,  transition_length = 1, state_length = 1) +
+  ease_aes('sine-in-out')
+```
+
+```{r}
+
+library(lubridate)
+  
+test1 <-  gen_election_2016 %>% 
+  select(candidate_name, expenditure_amount, expenditure_date,support_oppose_indicator) %>% 
+  filter(year(expenditure_date) == 2016, !is.na(support_oppose_indicator)) %>% 
+  mutate(month = month(expenditure_date),exp_cum = cumsum(expenditure_amount)) %>% 
+  group_by(month) %>% 
+  arrange(month, -expenditure_amount) %>% 
+  ggplot(aes(x = candidate_name, y = expenditure_amount, fill = support_oppose_indicator)) +
+  geom_col() +
+  coord_flip()
+test1 +
+  transition_states(month, transition_length = 4, state_length = 4)
+test1
+
+gen_election_2016 %>% 
+  filter(!is.na(support_oppose_indicator)) %>% 
+  mutate(party = case_when(candidate_name == "Clinton" & support_oppose_indicator == "S" ~ "D",
+                           candidate_name == "Trump" & support_oppose_indicator == "O" ~ "D",
+                           candidate_name == "Trump" & support_oppose_indicator == "S" ~ "R",
+                           candidate_name == "Clinton" & support_oppose_indicator == "O" ~ "R")) %>% 
+  ggplot(aes(x = party, y =  expenditure_amount, fill = support_oppose_indicator )) +
+  geom_col() +
+  coord_flip()
+  
+```
+
+```{r}
+gen_election_2016 <- general %>% 
+  filter(report_year == 2016,
+    str_detect(candidate_name, regex("obama",ignore_case = TRUE)) | str_detect(candidate_name, regex("m",ignore_case = TRUE) )) %>% 
+  mutate(candidate_name = if_else(str_detect(candidate_name, regex("clinton",ignore_case = TRUE)),"Clinton","Trump"))
+
+```
+

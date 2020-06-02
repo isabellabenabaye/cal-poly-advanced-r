@@ -1,6 +1,6 @@
 ---
 title: "Lab 3: Data from Many Sources"
-date: "5/31/2020"
+date: "5/31/2020 - 6/1/2020"
 output: github_document
 ---
 # The Open-Notify API

@@ -29,21 +29,30 @@ For `date_of_birth`:
 <!-- end list -->
 
 ``` r
-oscars$date_of_birth <- str_replace_all(oscars$date_of_birth," [1]","")
+oscars$date_of_birth <- str_replace_all(oscars$date_of_birth," [1]","")   ## remove "[1]" from one of the obs
+
 oscars <- oscars %>% 
   # fix the date of birth
-  mutate(date_of_birth = if_else(str_length(date_of_birth) > 11, str_sub(date_of_birth,1,11), date_of_birth)) %>%  ## remove "[1]" from one of the obs
+  
+  mutate(date_of_birth = if_else(str_length(date_of_birth) > 11, str_sub(date_of_birth,1,11), date_of_birth)) %>% 
+  
   separate(date_of_birth, c("day","month","birthyear"), sep = "-", remove = FALSE) %>%   ## separate birthday components
+  
   mutate(birthyear = case_when(str_length(birthyear) == 2 ~ paste0("19",birthyear),  ## add the century to the birth year
                                str_length(day) == 4 ~ day,  ## address the obs with only the year
                                TRUE ~ birthyear),
+         
          dob = ymd(paste(birthyear,month,day,sep = " ")),  ## get the formatted birthday
-         award_dt = ymd(paste(year_of_award,"Feb","1", sep = " ")),
+         
+         award_dt = ymd(paste(year_of_award,"Feb","1", sep = " ")),  ## format the exact award date
+         
          ## calculate the person's age using the function age_years() from https://raw.githubusercontent.com/nzcoops/r-code/master/age_function.R
          age = age_years(as.Date(dob), as.Date(award_dt)),
-         gender = case_when(award %in% c("Best Actor", "Best Supporting Actor") ~ 1,
+         
+         gender = case_when(award %in% c("Best Actor", "Best Supporting Actor") ~ 1,  ## gender indicator: M = 1, F = 0
                             award %in% c("Best Actress", "Best Supporting Actress") ~ 0,
                             TRUE ~ NA_real_),
+         
          white = if_else(race_ethnicity == "White", 1, 0)) ## race = white indicator
 ```
 
@@ -108,7 +117,7 @@ common_name <- oscars %>%
 ``` r
 common_birthplace <- oscars %>% 
   select(person, birthplace) %>% 
-  distinct() %>% 
+  distinct() %>%  ## make sure each person is only counted once
   group_by(birthplace) %>%
   count() %>% 
   ungroup() %>% 
@@ -119,7 +128,7 @@ common_birthplace <- oscars %>%
 | :------------ | -: |
 | New York City | 27 |
 
-The most common birthplace is *New York*, since New York City has
+The most common birthplace is **New York**, since New York City has
 produced the most Oscar winners.
 
 ## Age and Gender
@@ -131,20 +140,19 @@ different for the two genders of awards.
 ``` r
 oscars_gender <- oscars %>% 
   filter(award != "Best Director") %>% 
-  mutate(gender = as.integer(gender)) %>% 
-  select(person,movie,award,year_of_award,gender, age, white) %>% 
-  distinct()
+  select(person,movie,award,year_of_award,gender,age,white) %>% 
+  distinct()  ## make sure not to get duplicates
 
-lm(formula = age ~ year_of_award + gender + white, data = oscars_gender)
+lm(formula = age ~ year_of_award + gender, data = oscars_gender)
 ```
 
     ## 
     ## Call:
-    ## lm(formula = age ~ year_of_award + gender + white, data = oscars_gender)
+    ## lm(formula = age ~ year_of_award + gender, data = oscars_gender)
     ## 
     ## Coefficients:
-    ##   (Intercept)  year_of_award         gender          white  
-    ##    -100.20672        0.06717        9.26441        5.75153
+    ##   (Intercept)  year_of_award         gender  
+    ##      -71.0100         0.0551         9.0873
 
 If we look at a scatter plot of the `year_of_award` vs `age` and
 highlight them based on gender, we can see that it seems to be in line
@@ -152,13 +160,4 @@ with the result of the linear model above. Females tend to be younger,
 and the age of the winners has been ever-so-slightly rising over the
 years.
 
-![](01_P2_Oscars_Data_Analysis_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
-
-``` r
-oscars_gender %>% 
-  mutate(white = if_else(white == 1,"White","Non-white")) %>% 
-  ggplot(aes(x = year_of_award, y = age, color = white)) +
-  geom_point()
-```
-
-![](01_P2_Oscars_Data_Analysis_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](01_P2_Oscars_Data_Analysis_files/figure-gfm/scatter%20plot-1.png)<!-- -->

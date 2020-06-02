@@ -2,10 +2,7 @@
 title: "Lab, Part 2: `Oscars` Data Analysis"
 # author: Isabella Benabaye
 # date: 4/12/2020
-output: 
-  html_document:
-    theme: readable
-    highlight: haddock
+output: github_document
 ---
 
 ## Import libraries and data
